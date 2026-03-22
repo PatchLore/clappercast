@@ -246,6 +246,13 @@
       <span class="stat-label">WebRTC</span>
       <span class="stat-val"><span class="dot" id="dot-rtc"></span><span id="lbl-rtc">Idle</span></span>
     </div>
+    <div class="stat-row">
+      <span class="stat-label">Screen lock</span>
+      <span class="stat-val">
+        <span class="dot" id="dot-wake"></span>
+        <span id="lbl-wake">Off</span>
+      </span>
+    </div>
   </div>
 
   <div id="visualiser" style="
@@ -286,6 +293,76 @@ let activated = false;
 let iceCandidateBuffer = [];
 let remoteDescSet = false;
 let sharedAudioCtx = null;
+let wakeLock = null;
+let silentAudioCtx = null;
+
+async function onWakeLockReleased() {
+  console.log('Wake lock released — reacquiring');
+  wakeLock = null;
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      setDot('wake', 'live', 'Screen staying on');
+      wakeLock.addEventListener('release', onWakeLockReleased);
+    }
+  } catch (e) {
+    console.log('Could not reacquire wake lock:', e);
+    setDot('wake', 'warn', 'Lock lost');
+  }
+}
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      if (wakeLock && !wakeLock.released) {
+        setDot('wake', 'live', 'Screen staying on');
+        return;
+      }
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('Wake lock acquired');
+      setDot('wake', 'live', 'Screen staying on');
+      wakeLock.addEventListener('release', onWakeLockReleased);
+    } else {
+      console.log('Wake Lock API not supported on this device');
+      setDot('wake', 'warn', 'Not supported');
+    }
+  } catch (err) {
+    console.log('Wake lock failed:', err.message);
+    setDot('wake', 'warn', 'Failed');
+  }
+}
+
+async function releaseWakeLock() {
+  if (wakeLock) {
+    try {
+      await wakeLock.release();
+    } catch (e) { /* ignore */ }
+    wakeLock = null;
+  }
+}
+
+function startSilentAudio() {
+  try {
+    silentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    silentAudioCtx.resume().then(() => {
+      const oscillator = silentAudioCtx.createOscillator();
+      const gainNode = silentAudioCtx.createGain();
+      gainNode.gain.value = 0.001;
+      oscillator.connect(gainNode);
+      gainNode.connect(silentAudioCtx.destination);
+      oscillator.start();
+      console.log('Silent audio loop started');
+    });
+  } catch (e) {
+    console.log('Silent audio loop failed:', e);
+  }
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && (!wakeLock || wakeLock.released)) {
+    await requestWakeLock();
+  }
+});
 
 // ── Orb helper ─────────────────────────────────────────
 function setOrb(state, status, sub) {
@@ -423,6 +500,7 @@ function connectWS() {
       iceCandidateBuffer = [];
 
       pc.ontrack = (e) => {
+        requestWakeLock();
         console.log('ontrack: ' + e.track.kind);
 
         const stream = e.streams[0] || new MediaStream([e.track]);
@@ -511,8 +589,10 @@ function connectWS() {
 function activate() {
   if (activated) return;
   activated = true;
+  requestWakeLock();
   sharedAudioCtx = new AudioCtx();
   sharedAudioCtx.resume().then(() => console.log('Shared AudioCtx created: ' + sharedAudioCtx.state));
+  startSilentAudio();
   const audio = document.getElementById('audio-out');
   audio.load();
   audio.play().catch(() => {
