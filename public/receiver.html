@@ -255,6 +255,22 @@
     </div>
   </div>
 
+  <div id="dnd-reminder" style="
+    display:none;
+    flex-direction:row;
+    background:#BA7517;
+    color:#412402;
+    padding:12px 16px;
+    border-radius:10px;
+    font-size:13px;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    margin-top:8px;
+  ">
+    ⚠️ Enable Do Not Disturb to prevent notifications interrupting your stream
+  </div>
+
   <div id="visualiser" style="
     display:flex;
     align-items:flex-end;
@@ -379,6 +395,12 @@ function setDot(id, cls, label) {
   document.getElementById('lbl-'+id).textContent = label;
 }
 
+// Show DND reminder when stream starts
+function showDNDReminder() {
+  const banner = document.getElementById('dnd-reminder');
+  if (banner) banner.style.display = 'flex';
+}
+
 // ── Volume meter ───────────────────────────────────────
 function startMeter(stream) {
   const meterCtx = new AudioCtx();
@@ -501,6 +523,7 @@ function connectWS() {
 
       pc.ontrack = (e) => {
         requestWakeLock();
+        showDNDReminder();
         console.log('ontrack: ' + e.track.kind);
 
         const stream = e.streams[0] || new MediaStream([e.track]);
