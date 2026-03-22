@@ -592,7 +592,7 @@
 </footer>
 
 <script>
-const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://__SERVER_IP__:3747`;
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
 let ws, pc, localStream, analyser, animFrame;
 let phoneConnected = false;
 let streamActive = false;

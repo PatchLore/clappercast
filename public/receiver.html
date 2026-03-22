@@ -279,7 +279,7 @@ const PC_CONFIG = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
   sdpSemantics: 'unified-plan'
 };
-const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://__SERVER_IP__:3747`;
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
 let ws, pc, audioCtx, analyser, animFrame;
 let senderReady = false;
 let activated = false;
