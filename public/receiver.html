@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ClapperCast — Phone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080f;
+    --surface: #0f1018;
+    --surface2: #181922;
+    --border: rgba(255,255,255,0.08);
+    --accent: #00e5a0;
+    --warn: #ff6b35;
+    --danger: #ff4757;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --display: 'Syne', sans-serif;
+    --mono: 'DM Mono', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,229,160,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+    padding: 48px 24px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    min-height: 100dvh;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  .role-badge {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+
+  /* Big status orb */
+  .orb-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
+  }
+  .orb {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px solid var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    transition: all 0.5s;
+    position: relative;
+  }
+  .orb.waiting { border-color: rgba(107,107,128,0.4); }
+  .orb.connecting {
+    border-color: var(--warn);
+    box-shadow: 0 0 30px rgba(255,107,53,0.2);
+    animation: spin-border 2s linear infinite;
+  }
+  .orb.live {
+    border-color: var(--accent);
+    box-shadow: 0 0 40px rgba(0,229,160,0.25), 0 0 80px rgba(0,229,160,0.1);
+    animation: breathe 3s ease-in-out infinite;
+  }
+  .orb.error { border-color: var(--danger); box-shadow: 0 0 20px rgba(255,71,87,0.2); }
+
+  @keyframes breathe {
+    0%,100% { box-shadow: 0 0 30px rgba(0,229,160,0.2), 0 0 60px rgba(0,229,160,0.08); }
+    50% { box-shadow: 0 0 50px rgba(0,229,160,0.35), 0 0 100px rgba(0,229,160,0.15); }
+  }
+  @keyframes spin-border {
+    to { transform: rotate(360deg); }
+  }
+
+  .orb-status {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 0.5px;
+  }
+  .orb-sub {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  /* Cards */
+  .card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .card-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: var(--display);
+    font-weight: 700;
+  }
+
+  /* Status rows */
+  .stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .stat-label { font-size: 13px; color: var(--muted); }
+  .stat-val { font-size: 13px; color: var(--text); }
+  .dot { width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;transition:all 0.3s; }
+  .dot.live { background:var(--accent);box-shadow:0 0 6px var(--accent); }
+  .dot.warn { background:var(--warn); }
+  .dot.dead { background:var(--danger); }
+
+  /* Big activate button */
+  .btn-activate {
+    width: 100%;
+    padding: 18px;
+    background: transparent;
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    -webkit-appearance: none;
+  }
+  .btn-activate:active { background: rgba(0,229,160,0.1); transform: scale(0.98); }
+  .btn-activate:disabled { opacity: 0.35; }
+
+  /* Volume meter */
+  .meter-bar-bg { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .meter-bar { height: 100%; width: 0%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), #00b4d8); transition: width 0.05s; }
+
+  /* Instructions */
+  .tip {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.7;
+    text-align: center;
+    padding: 0 8px;
+  }
+  .tip strong { color: var(--text); }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="logo">
+    <div class="logo-dot"></div>
+    ClapperCast
+  </div>
+  <span class="role-badge">📱 Phone Receiver</span>
+
+  <!-- Big orb -->
+  <div class="orb-wrap">
+    <div class="orb waiting" id="orb">🎙️</div>
+    <div class="orb-status" id="orb-status">Waiting for PC…</div>
+    <div class="orb-sub" id="orb-sub">Make sure your PC sender is open<br>on the same Wi-Fi network.</div>
+  </div>
+
+  <!-- Activate button (must be user gesture on iOS) -->
+  <button class="btn-activate" id="btn-activate" onclick="activate()" disabled>
+    ▶ Tap to receive audio
+  </button>
+
+  <!-- Status card -->
+  <div class="card">
+    <div class="card-title">Status</div>
+    <div class="stat-row">
+      <span class="stat-label">Signal server</span>
+      <span class="stat-val"><span class="dot" id="dot-ws"></span><span id="lbl-ws">Connecting…</span></span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">PC sender</span>
+      <span class="stat-val"><span class="dot" id="dot-pc"></span><span id="lbl-pc">Not connected</span></span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">WebRTC</span>
+      <span class="stat-val"><span class="dot" id="dot-rtc"></span><span id="lbl-rtc">Idle</span></span>
+    </div>
+  </div>
+
+  <div id="visualiser" style="
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    gap:3px;
+    height:60px;
+    width:100%;
+    padding:8px 0;
+  "></div>
+
+  <!-- Volume card -->
+  <div class="card">
+    <div class="card-title">Incoming audio level</div>
+    <div class="meter-bar-bg"><div class="meter-bar" id="meter-bar"></div></div>
+  </div>
+
+  <!-- Tip -->
+  <p class="tip">
+    Once streaming, open <strong>Clapper Radio</strong> and start a session.<br>
+    Clapper will pick up this audio as your microphone. 🎙️
+  </p>
+
+  <audio id="audio-out" playsinline webkit-playsinline autoplay volume="1.0" style="width:100%;margin-top:16px;"></audio>
+</div>
+
+<script>
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const PC_CONFIG = {
+  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  sdpSemantics: 'unified-plan'
+};
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://__SERVER_IP__:3747`;
+let ws, pc, audioCtx, analyser, animFrame;
+let senderReady = false;
+let activated = false;
+let iceCandidateBuffer = [];
+let remoteDescSet = false;
+let sharedAudioCtx = null;
+
+// ── Orb helper ─────────────────────────────────────────
+function setOrb(state, status, sub) {
+  const orb = document.getElementById('orb');
+  const icons = { waiting:'🎙️', connecting:'📡', live:'🔴', error:'⚠️' };
+  orb.className = 'orb ' + state;
+  orb.textContent = icons[state] || '🎙️';
+  document.getElementById('orb-status').textContent = status;
+  document.getElementById('orb-sub').textContent = sub;
+}
+
+function setDot(id, cls, label) {
+  document.getElementById('dot-'+id).className = 'dot '+(cls||'');
+  document.getElementById('lbl-'+id).textContent = label;
+}
+
+// ── Volume meter ───────────────────────────────────────
+function startMeter(stream) {
+  const meterCtx = new AudioCtx();
+  meterCtx.resume();
+  const src = meterCtx.createMediaStreamSource(stream);
+  const analyser = meterCtx.createAnalyser();
+  analyser.fftSize = 512;
+  src.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  function tick() {
+    analyser.getByteFrequencyData(data);
+    const avg = data.reduce((a, b) => a + b, 0) / data.length;
+    const pct = Math.min(100, avg * 3);
+    const bar = document.getElementById('meter-bar');
+    if (bar) bar.style.width = pct + '%';
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function startVisualiser(stream) {
+  const visCtx = new AudioCtx();
+  visCtx.resume();
+  const src = visCtx.createMediaStreamSource(stream);
+  const analyser = visCtx.createAnalyser();
+  analyser.fftSize = 64;
+  src.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  const container = document.getElementById('visualiser');
+  if (!container) return;
+  container.innerHTML = '';
+  const bars = Array.from({ length: 20 }, () => {
+    const bar = document.createElement('div');
+    bar.style.cssText = `
+      width: 100%;
+      background: #00e5a0;
+      border-radius: 2px 2px 0 0;
+      height: 4px;
+      transition: height 0.05s;
+      min-height: 4px;
+    `;
+    container.appendChild(bar);
+    return bar;
+  });
+
+  function tick() {
+    analyser.getByteFrequencyData(data);
+    bars.forEach((bar, i) => {
+      const val = data[i] || 0;
+      const h = Math.max(4, (val / 255) * 60);
+      bar.style.height = h + 'px';
+    });
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function waitForIceGathering(peer) {
+  return new Promise((resolve) => {
+    if (peer.iceGatheringState === 'complete') return resolve();
+    const timeout = setTimeout(() => {
+      peer.onicegatheringstatechange = null;
+      resolve();
+    }, 3000);
+    peer.onicegatheringstatechange = () => {
+      if (peer.iceGatheringState === 'complete') {
+        clearTimeout(timeout);
+        peer.onicegatheringstatechange = null;
+        resolve();
+      }
+    };
+  });
+}
+
+// ── WebSocket ──────────────────────────────────────────
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    setDot('ws', 'live', 'Connected');
+    ws.send(JSON.stringify({ type: 'register-receiver' }));
+  };
+
+  ws.onclose = () => {
+    console.log('WS closed, reconnecting in 3s...');
+    setDot('ws', 'dead', 'Reconnecting…');
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => {};
+
+  ws.onmessage = async (e) => {
+    const msg = JSON.parse(e.data);
+
+    if (msg.type === 'registered') {
+      setDot('ws', 'live', 'Registered');
+    }
+
+    if (msg.type === 'sender-ready') {
+      senderReady = true;
+      setDot('pc', 'live', 'Online');
+      document.getElementById('btn-activate').disabled = false;
+      setOrb('connecting', 'PC is ready', 'Tap the button below to start receiving audio.');
+    }
+
+    if (msg.type === 'sender-disconnected') {
+      senderReady = false;
+      setDot('pc', 'dead', 'Disconnected');
+      setOrb('waiting', 'PC disconnected', 'Re-open the sender page on your PC.');
+      document.getElementById('btn-activate').disabled = true;
+    }
+
+    if (msg.type === 'offer') {
+      console.log('offer received');
+      pc = new RTCPeerConnection(PC_CONFIG);
+      pc.addTransceiver('audio', { direction: 'recvonly' });
+      remoteDescSet = false;
+      iceCandidateBuffer = [];
+
+      pc.ontrack = (e) => {
+        console.log('ontrack: ' + e.track.kind);
+
+        const stream = e.streams[0] || new MediaStream([e.track]);
+
+        // Bypass audio element — use Web Audio API directly
+        const source = sharedAudioCtx.createMediaStreamSource(stream);
+        source.connect(sharedAudioCtx.destination);
+        console.log('Connected to Web Audio destination');
+        console.log('AudioCtx state: ' + sharedAudioCtx.state);
+
+        sharedAudioCtx.resume().then(() => {
+          console.log('AudioCtx resumed — should hear audio now');
+        });
+
+        setOrb('live', 'Audio live!', 'Streaming');
+        setDot('rtc', 'live', 'Streaming');
+
+        // Also try audio element as backup
+        const audio = document.getElementById('audio-out');
+        audio.srcObject = stream;
+        audio.volume = 1.0;
+        audio.muted = false;
+        audio.play().then(() => console.log('audio element playing'))
+          .catch(err => console.log('audio element blocked: ' + err.message));
+        startMeter(stream);
+        startVisualiser(stream);
+
+        const btn = document.getElementById('btn-activate');
+        if (btn) btn.style.display = 'none';
+
+        setOrb('live', 'You are live', 'Audio is streaming to Clapper.');
+        setDot('ws', 'live', 'Connected');
+        setDot('pc', 'live', 'Online');
+        setDot('rtc', 'live', 'Streaming');
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        console.log('ICE: ' + pc.iceConnectionState);
+        if (pc.iceConnectionState === 'connected') {
+          setOrb('live', 'Audio live!', 'Streaming');
+          setDot('rtc', 'live', 'Streaming');
+        }
+        if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+          setOrb('error', 'Stream dropped', 'Reconnect from the PC sender.');
+          setDot('rtc', 'dead', pc.iceConnectionState);
+        }
+      };
+
+      pc.onicegatheringstatechange = () => {
+        console.log('Gathering: ' + pc.iceGatheringState);
+      };
+
+      pc.onsignalingstatechange = () => {
+        console.log('Signal: ' + pc.signalingState);
+      };
+
+      pc.onicecandidate = (e) => {
+        console.log('ICE candidate: ' + (e.candidate?.type || 'none'));
+        // embedded in SDP
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+      remoteDescSet = true;
+      const answer = await pc.createAnswer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: false
+      });
+      await pc.setLocalDescription(answer);
+      await waitForIceGathering(pc);
+      ws.send(JSON.stringify({ type: 'answer', sdp: pc.localDescription }));
+      setDot('rtc', 'warn', 'Handshaking…');
+      if (pc.iceConnectionState !== 'connected') setOrb('connecting', 'Connecting…', 'Establishing audio stream from PC.');
+    }
+
+    if (msg.type === 'ice-candidate' && msg.candidate) {
+      if (remoteDescSet) {
+        try { if (pc) await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch {}
+      } else {
+        iceCandidateBuffer.push(msg.candidate);
+      }
+    }
+  };
+}
+
+// ── Activate (user gesture for iOS AudioContext) ──────
+function activate() {
+  if (activated) return;
+  activated = true;
+  sharedAudioCtx = new AudioCtx();
+  sharedAudioCtx.resume().then(() => console.log('Shared AudioCtx created: ' + sharedAudioCtx.state));
+  const audio = document.getElementById('audio-out');
+  audio.load();
+  audio.play().catch(() => {
+    console.log('Pre-unlock play blocked — OK, will play on ontrack');
+  });
+  console.log('Audio unlocked for ' + (navigator.vendor.includes('Apple') ? 'Safari' : 'Chrome'));
+  setOrb('connecting', 'Ready to receive', 'Hit Start on the PC sender now.');
+  document.getElementById('btn-activate').disabled = true;
+  document.getElementById('btn-activate').textContent = '⏳ Waiting for stream…';
+}
+
+// ── Init ───────────────────────────────────────────────
+connectWS();
+</script>
+</body>
+</html>

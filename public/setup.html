@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClapperCast Setup Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #111118;
+      --surface2: #181922;
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #00e5a0;
+      --text: #e8e8f0;
+      --muted: #8a8a9e;
+      --warn-bg: rgba(255, 140, 0, 0.12);
+      --warn-border: rgba(255, 180, 70, 0.55);
+      --warn-text: #ffc982;
+      --mono: "DM Mono", monospace;
+      --display: "Syne", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 18px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 10px;
+      font-family: var(--display);
+      letter-spacing: 0.2px;
+    }
+    h1 { font-size: clamp(26px, 4.5vw, 38px); }
+    h2 { font-size: clamp(18px, 3.3vw, 24px); color: var(--accent); }
+    h3 { font-size: 17px; }
+    .hero p { margin: 0; color: var(--muted); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 18px;
+      border-radius: 999px;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+      font-family: var(--display);
+      letter-spacing: 0.4px;
+    }
+    .section-title { margin-bottom: 8px; }
+    .step {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .step-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .num {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--display);
+      font-weight: 700;
+    }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    li { margin: 4px 0; }
+    .warn {
+      margin-top: 9px;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      color: var(--warn-text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font-weight: 500;
+    }
+    .shot {
+      margin-top: 10px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      overflow: hidden;
+      border-radius: 10px;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--surface2); color: var(--accent); }
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="actions">
+      <a class="btn" href="/">Back to app</a>
+    </div>
+
+    <section class="card hero">
+      <h1>Get set up in 5 minutes — follow every step or it won't work</h1>
+      <p>Use this checklist exactly in order. Most "no audio" issues come from skipping one setup step.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">SECTION 1 — Windows PC Setup (do this once)</h2>
+
+      <article class="step">
+        <div class="step-head"><span class="num">1</span><h3>Download VB-Audio Virtual Cable (free)</h3></div>
+        <ul>
+          <li>Go to <a href="https://vb-audio.com/Cable/" target="_blank" rel="noreferrer">vb-audio.com/Cable</a></li>
+          <li>Download and install</li>
+        </ul>
+        <div class="warn">⚠️ RESTART YOUR PC after installing — it won't work without a restart.</div>
+        <div class="shot">Screenshot placeholder: VB-Audio download page + installer</div>
+      </article>
+
+      <article class="step">
+        <div class="step-head"><span class="num">2</span><h3>Set your audio output correctly</h3></div>
+        <p>This is the most common mistake.</p>
+        <ul>
+          <li>Open the app you want to stream (Spotify, OBS, YouTube etc)</li>
+          <li>Right-click the Windows speaker icon in taskbar → Open Volume Mixer</li>
+          <li>Find your app in the list</li>
+          <li>Change its output to <strong>CABLE Input (VB-Audio Virtual Cable)</strong></li>
+        </ul>
+        <div class="warn">⚠️ If you skip this step you will hear silence on your phone.</div>
+        <div class="shot">Screenshot placeholder: Windows Volume Mixer with CABLE Input selected</div>
+      </article>
+
+      <article class="step">
+        <div class="step-head"><span class="num">3</span><h3>Open ClapperCast on your PC</h3></div>
+        <ul>
+          <li>Open Chrome (not Edge, not Firefox)</li>
+          <li>Go to <strong>https://[your-domain]/</strong></li>
+          <li>Chrome will warn about the certificate — click Advanced → Proceed</li>
+          <li>Allow microphone access when prompted</li>
+          <li>Select <strong>CABLE Output (VB-Audio Virtual Cable)</strong> from the dropdown</li>
+        </ul>
+        <div class="shot">Screenshot placeholder: sender page with CABLE Output selected</div>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">SECTION 2 — iPhone Setup (do this once)</h2>
+
+      <article class="step">
+        <div class="step-head"><span class="num">4</span><h3>Trust the certificate on iPhone</h3></div>
+        <ul>
+          <li>Open Safari on your iPhone</li>
+          <li>Go to <strong>https://[your-domain]/receiver</strong></li>
+          <li>Tap Show Details → Visit this website → Visit Website</li>
+          <li>If prompted: Settings → General → VPN &amp; Device Management → Trust</li>
+        </ul>
+        <div class="shot">Screenshot placeholder: Safari certificate trust flow</div>
+      </article>
+
+      <article class="step">
+        <div class="step-head"><span class="num">5</span><h3>Allow audio</h3></div>
+        <ul>
+          <li>Tap <strong>Tap to receive audio</strong> — you MUST tap this before audio will play</li>
+          <li>Make sure your iPhone is NOT on silent mode (check the switch on the left side)</li>
+          <li>Turn volume up using the physical buttons</li>
+        </ul>
+        <div class="shot">Screenshot placeholder: receiver page after audio unlock tap</div>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">SECTION 3 — Going live on Clapper</h2>
+
+      <article class="step">
+        <div class="step-head"><span class="num">6</span><h3>Connect everything</h3></div>
+        <ul>
+          <li>PC: select CABLE Output, click Start Streaming</li>
+          <li>Phone: confirm it shows <strong>You are live</strong></li>
+          <li>Check the visualiser bars are moving — if they're flat your audio routing is wrong (go back to Step 2)</li>
+        </ul>
+      </article>
+
+      <article class="step">
+        <div class="step-head"><span class="num">7</span><h3>Open Clapper Radio</h3></div>
+        <ul>
+          <li>Open the Clapper app</li>
+          <li>Tap + → Radio → Start</li>
+          <li>Clapper picks up your PC audio as the microphone</li>
+        </ul>
+        <div class="warn">⚠️ Keep the ClapperCast browser tab open in the background on your phone.</div>
+      </article>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">SECTION 4 — Troubleshooting</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Problem</th>
+            <th>Fix</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Visualiser bars not moving</td>
+            <td>Check Step 2 — your app output is wrong.</td>
+          </tr>
+          <tr>
+            <td>No sound on phone</td>
+            <td>Check silent mode switch and volume.</td>
+          </tr>
+          <tr>
+            <td>Phone can't connect</td>
+            <td>Make sure phone and PC are on same Wi-Fi.</td>
+          </tr>
+          <tr>
+            <td>Start button greyed out</td>
+            <td>Allow microphone in Chrome (click padlock icon).</td>
+          </tr>
+          <tr>
+            <td>Certificate warning on iPhone</td>
+            <td>Follow Step 4 again.</td>
+          </tr>
+          <tr>
+            <td>Audio cuts out</td>
+            <td>Keep phone screen on, disable low power mode.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="actions">
+      <a class="btn" href="/">Back to app</a>
+    </div>
+  </div>
+</body>
+</html>

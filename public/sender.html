@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClapperCast Bridge — PC Sender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5a0;
+    --accent2: #7c4dff;
+    --warn: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #ff4757;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 12px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 8px var(--accent); }
+    50% { box-shadow: 0 0 20px var(--accent), 0 0 40px rgba(0,229,160,0.3); }
+  }
+  .role-badge {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 20px;
+  }
+  .header-link {
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid rgba(0,229,160,0.5);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 32px 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: border-color 0.3s;
+  }
+  .panel:hover { border-color: rgba(255,255,255,0.12); }
+  .panel-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Status indicators */
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+  .status-label { font-size: 13px; color: var(--muted); }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.3s;
+  }
+  .dot.live { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.warn { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  .dot.dead { background: var(--danger); }
+
+  /* Big action button */
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px;
+    background: transparent;
+    border: 1.5px solid var(--accent);
+    border-radius: 12px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: rgba(0,229,160,0.08);
+    box-shadow: 0 0 24px rgba(0,229,160,0.15);
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary.active {
+    background: rgba(0,229,160,0.12);
+    border-color: var(--accent);
+  }
+  .btn-loopback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid rgba(0,229,160,0.4);
+    border-radius: 12px;
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-loopback:not(:disabled):hover {
+    background: rgba(0,229,160,0.08);
+  }
+  .btn-loopback:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .fader-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .fader-row input {
+    flex: 1;
+    accent-color: var(--accent);
+    background: var(--surface2);
+    border-radius: 999px;
+    height: 6px;
+  }
+  .fader-row span {
+    min-width: 42px;
+    text-align: right;
+  }
+  .tip-banner {
+    display: none;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px dashed rgba(0,229,160,0.4);
+    background: rgba(0,229,160,0.08);
+    font-size: 12px;
+    text-align: center;
+  }
+  .tip-banner a {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+  #soundboard-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  #soundboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .sound-slot {
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px;
+    min-height: 72px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: border 0.2s, background 0.2s;
+  }
+  .sound-slot.loaded {
+    border-style: solid;
+  }
+  .sound-slot.drag-over {
+    background: rgba(0,229,160,0.08);
+    border-color: var(--accent);
+  }
+  .sound-slot .key {
+    font-size: 20px;
+    font-family: var(--display);
+    color: var(--accent);
+  }
+  .sound-slot .name {
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .btn-danger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1.5px solid var(--danger);
+    border-radius: 12px;
+    color: var(--danger);
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .btn-danger:hover { background: rgba(255,71,87,0.08); }
+
+  /* Device selector */
+  select {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b80' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  select:focus { border-color: var(--accent); }
+
+  /* Volume meter */
+  .meter-wrap {
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding: 14px;
+  }
+  .meter-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .meter-bar-bg {
+    height: 8px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .meter-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), #00b4d8);
+    transition: width 0.05s;
+  }
+  .meter-bar.warn { background: linear-gradient(90deg, var(--warn), #ff9f43); }
+  .meter-val {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 6px;
+  }
+
+  /* QR panel */
+  .qr-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+  }
+  .qr-img {
+    width: 180px;
+    height: 180px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .qr-img img { width: 100%; border-radius: 4px; }
+  .qr-url {
+    font-size: 11px;
+    color: var(--muted);
+    word-break: break-all;
+    text-align: center;
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    width: 100%;
+  }
+  .qr-url span { color: var(--accent); }
+
+  /* Log */
+  .log-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 11px;
+    color: var(--muted);
+    height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .log-box .log-line { display: flex; gap: 8px; }
+  .log-box .log-time { color: var(--accent); opacity: 0.6; min-width: 60px; }
+  .log-box .log-msg.ok { color: var(--accent); }
+  .log-box .log-msg.warn { color: var(--warn); }
+  .log-box .log-msg.err { color: var(--danger); }
+
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 16px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-note { font-size: 11px; color: var(--muted); }
+  .latency-badge {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .latency-badge span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    ClapperCast Bridge
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a class="header-link" href="/setup">Setup Guide</a>
+    <span class="role-badge">📻 PC Sender</span>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: Audio Source + Controls -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- Connection status -->
+    <div class="panel">
+      <div class="panel-title">Connection</div>
+
+      <div class="status-row">
+        <span class="status-label">Signal server</span>
+        <div class="status-pill">
+          <div class="dot" id="dot-server"></div>
+          <span id="lbl-server">Connecting…</span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">Phone receiver</span>
+        <div class="status-pill">
+          <div class="dot" id="dot-phone"></div>
+          <span id="lbl-phone">Waiting for phone…</span>
+        </div>
+      </div>
+      <div class="status-row">
+        <span class="status-label">WebRTC stream</span>
+        <div class="status-pill">
+          <div class="dot" id="dot-rtc"></div>
+          <span id="lbl-rtc">Not started</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audio source -->
+    <div class="panel">
+      <div class="panel-title">Audio Source</div>
+      <select id="device-select">
+        <option value="">— Select audio input —</option>
+      </select>
+      <div id="obs-tip" class="tip-banner">
+        VB-Audio Cable not detected.
+        <a href="https://vb-audio.com/Cable/" target="_blank" rel="noreferrer">Download it free</a>
+        then set OBS monitoring to "CABLE Input" to route OBS audio here.
+      </div>
+      <button class="btn-loopback" id="btn-loopback" disabled onclick="startLoopback()">
+        Test with built-in mic (loopback)
+      </button>
+      <div class="meter-wrap">
+        <div class="meter-label">Input level</div>
+        <div class="meter-bar-bg"><div class="meter-bar" id="meter-bar"></div></div>
+        <div class="meter-val" id="meter-val">—</div>
+      </div>
+      <div class="fader-row">
+        <label for="mic-gain">Mic</label>
+        <input type="range" id="mic-gain" min="0" max="2" step="0.05" value="1">
+        <span id="mic-gain-val">100%</span>
+      </div>
+      <div class="fader-row">
+        <label for="sfx-gain">Sounds</label>
+        <input type="range" id="sfx-gain" min="0" max="2" step="0.05" value="0.8">
+        <span id="sfx-gain-val">80%</span>
+      </div>
+      <button class="btn-primary" id="btn-stream" disabled onclick="startStream()">
+        ▶ Start streaming to phone
+      </button>
+      <button class="btn-danger" id="btn-stop" onclick="stopStream()">
+        ■ Stop stream
+      </button>
+    </div>
+
+    <div id="soundboard-panel" class="panel">
+      <div class="panel-title">Soundboard — press 1–6 to trigger</div>
+      <div id="soundboard-grid"></div>
+    </div>
+
+    <!-- Log -->
+    <div class="panel" style="gap:12px;">
+      <div class="panel-title">Activity log</div>
+      <div class="log-box" id="log-box"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: QR + Instructions -->
+  <div style="display:flex;flex-direction:column;gap:24px;">
+
+    <!-- QR code -->
+    <div class="panel">
+      <div class="panel-title">Step 1 — Connect your phone</div>
+      <div class="qr-wrap">
+        <div class="qr-img">
+          <img id="qr-img" src="" alt="QR loading…">
+        </div>
+        <div class="qr-url">Open on phone: <span id="qr-url">loading…</span></div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);text-align:center;line-height:1.6;">
+        Make sure your phone is on the <strong style="color:var(--text)">same Wi-Fi</strong> as this PC.
+      </p>
+    </div>
+
+    <!-- Instructions -->
+    <div class="panel">
+      <div class="panel-title">Step 2 — OBS Setup</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="status-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+          <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">In OBS Studio</span>
+          <span style="font-size:12px;line-height:1.7;">
+            Audio Settings → <strong style="color:var(--accent)">Monitoring Device</strong> → set to <em>VB-Audio Virtual Cable</em>.<br>
+            Then on each audio source: Advanced Audio → <strong style="color:var(--accent)">Monitor and Output</strong>.
+          </span>
+        </div>
+        <div class="status-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+          <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Then here</span>
+          <span style="font-size:12px;line-height:1.7;">
+            Select <strong style="color:var(--accent)">CABLE Output (VB-Audio)</strong> as your audio source above, then hit Start.
+          </span>
+        </div>
+        <div class="status-row" style="align-items:flex-start;flex-direction:column;gap:6px;">
+          <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">On Clapper</span>
+          <span style="font-size:12px;line-height:1.7;">
+            Open Clapper Radio on your phone — it will pick up this audio as if it's a wired headset. 🎙️
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="gap:10px;">
+      <div class="panel-title">Step 3 — Go live</div>
+      <div class="latency-badge" style="width:fit-content;">
+        Latency target: <span>&lt;50ms</span> on local Wi-Fi
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.7;">
+        Once the WebRTC stream is <strong style="color:var(--accent);">connected</strong>, open Clapper Radio on your phone and start a session. Clapper will use the audio routed from this PC as its mic input. You control the mix here — Clapper sees it as a "wired headset."
+      </p>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span class="footer-note">ClapperCast Bridge — MVP v1.0</span>
+  <div id="server-status" class="footer-note">Server sees: sender=false receiver=false</div>
+  <div class="latency-badge">RTT: <span id="rtt-val">—</span></div>
+</footer>
+
+<script>
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://__SERVER_IP__:3747`;
+let ws, pc, localStream, analyser, animFrame;
+let phoneConnected = false;
+let streamActive = false;
+let iceCandidateBuffer = [];
+let remoteDescSet = false;
+let pendingAnswer = null;
+const soundboard = [];
+let audioCtx;
+let micGainNode;
+let sfxGainNode;
+
+// ── Logging ────────────────────────────────────────────
+function log(msg, type='') {
+  const box = document.getElementById('log-box');
+  const now = new Date().toLocaleTimeString('en-GB',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">${now}</span><span class="log-msg ${type}">${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── QR code ────────────────────────────────────────────
+async function loadQR() {
+  const r = await fetch('/qr');
+  const d = await r.json();
+  document.getElementById('qr-img').src = d.qr;
+  document.getElementById('qr-url').textContent = d.url;
+}
+loadQR();
+
+// ── Audio devices ──────────────────────────────────────
+async function populateDevices() {
+  await navigator.mediaDevices.getUserMedia({ audio: true }); // trigger permission
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const inputs = devices.filter(d => d.kind === 'audioinput');
+  const sel = document.getElementById('device-select');
+  sel.innerHTML = '<option value="">— Select audio input —</option>';
+  inputs.forEach((d) => {
+    const opt = document.createElement('option');
+    opt.value = d.deviceId;
+    const label = d.label || `Microphone ${d.deviceId.slice(0,6)}`;
+    opt.textContent = label;
+    const lower = label.toLowerCase();
+    if (lower.includes('cable') || lower.includes('vb-audio')) {
+      opt.selected = true;
+      opt.textContent += '  ⭐';
+    }
+    sel.appendChild(opt);
+  });
+  const hasVBCable = inputs.some(d => {
+    const lbl = (d.label || '').toLowerCase();
+    return lbl.includes('cable') || lbl.includes('vb-audio');
+  });
+  const obsTip = document.getElementById('obs-tip');
+  if (obsTip) obsTip.style.display = hasVBCable ? 'none' : 'flex';
+  renderSoundboard();
+  updateStreamButtons();
+}
+populateDevices().catch(e => log('Mic permission denied: '+e.message, 'err'));
+
+document.getElementById('device-select').addEventListener('change', checkReady);
+
+function updateStreamButtons() {
+  const sel = document.getElementById('device-select').value;
+  const startBtn = document.getElementById('btn-stream');
+  const loopBtn = document.getElementById('btn-loopback');
+  startBtn.disabled = !(sel && phoneConnected && !streamActive);
+  loopBtn.disabled = !(phoneConnected && !streamActive);
+}
+
+function checkReady() {
+  updateStreamButtons();
+}
+
+function handlePhoneConnected() {
+  if (phoneConnected) return;
+  phoneConnected = true;
+  setDot('phone', 'live', 'Connected');
+  log('Phone receiver connected', 'ok');
+  checkReady();
+}
+
+function handlePhoneDisconnected() {
+  if (!phoneConnected) return;
+  phoneConnected = false;
+  setDot('phone', 'dead', 'Disconnected');
+  setDot('rtc', '', 'Not started');
+  log('Phone disconnected', 'warn');
+  checkReady();
+}
+
+async function pollServerStatus() {
+  const statusEl = document.getElementById('server-status');
+  if (!statusEl) return;
+  try {
+    const r = await fetch('/api/status');
+    const s = await r.json();
+    statusEl.textContent = `Server sees: sender=${s.senderConnected} receiver=${s.receiverConnected}`;
+    if (s.receiverConnected) {
+      handlePhoneConnected();
+    } else {
+      handlePhoneDisconnected();
+    }
+  } catch (err) {
+    statusEl.textContent = 'Server status unavailable';
+  }
+}
+
+function renderSoundboard() {
+  const grid = document.getElementById('soundboard-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const slot = soundboard[i];
+    const el = document.createElement('div');
+    el.className = 'sound-slot' + (slot ? ' loaded' : '');
+    el.innerHTML = slot
+      ? `<span class="key">${i+1}</span><span class="name">${slot.name.replace(/\.[^.]+$/, '')}</span>`
+      : `<span class="key">${i+1}</span><span class="name empty">Drop audio here</span>`;
+    el.ondragover = (e) => { e.preventDefault(); el.classList.add('drag-over'); };
+    el.ondragleave = () => el.classList.remove('drag-over');
+    el.ondrop = async (e) => {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) await loadSoundFile(file, i);
+    };
+    el.onclick = () => playSoundboardSlot(i);
+    grid.appendChild(el);
+  }
+}
+
+async function loadSoundFile(file, index) {
+  if (!audioCtx || audioCtx.state === 'closed') {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  soundboard[index] = { name: file.name, buffer: audioBuffer, key: String(index + 1) };
+  renderSoundboard();
+}
+
+function playSoundboardSlot(index) {
+  const slot = soundboard[index];
+  if (!slot?.buffer || !audioCtx || !sfxGainNode) return;
+  const source = audioCtx.createBufferSource();
+  source.buffer = slot.buffer;
+  source.connect(sfxGainNode);
+  source.start();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= 6) {
+    playSoundboardSlot(n - 1);
+  }
+});
+
+// ── Volume meter ───────────────────────────────────────
+function startMeter(stream) {
+  const ctx = new AudioContext();
+  const src = ctx.createMediaStreamSource(stream);
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  src.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  function tick() {
+    analyser.getByteFrequencyData(data);
+    const avg = data.reduce((a, b) => a + b, 0) / data.length;
+    const pct = Math.min(100, avg * 2);
+    const bar = document.getElementById('meter-bar');
+    if (bar) bar.style.width = pct + '%';
+    document.getElementById('meter-val').textContent = Math.round(pct) + '%';
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ── WebSocket ──────────────────────────────────────────
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    setDot('server', 'live', 'Connected');
+    log('Signal server connected', 'ok');
+    ws.send(JSON.stringify({ type: 'register-sender' }));
+  };
+
+  ws.onclose = () => {
+    console.log('WS closed, reconnecting in 3s...');
+    setDot('server', 'dead', 'Disconnected');
+    log('Signal server disconnected — retrying in 3s', 'warn');
+    setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => {};
+
+  ws.onmessage = async (e) => {
+    const msg = JSON.parse(e.data);
+
+    if (msg.type === 'receiver-connected' || msg.type === 'sender-ready') {
+      handlePhoneConnected();
+    }
+
+    if (msg.type === 'registered' && msg.role === 'sender') {
+      pollServerStatus();
+    }
+
+    if (msg.type === 'receiver-disconnected') {
+      handlePhoneDisconnected();
+    }
+
+    if (msg.type === 'answer') {
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+        log('Remote description set from answer', 'ok');
+        remoteDescSet = true;
+        for (const candidate of iceCandidateBuffer) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch {}
+        }
+        iceCandidateBuffer = [];
+        log('WebRTC handshake complete', 'ok');
+      } else {
+        pendingAnswer = msg.sdp;
+        log('Answer received but pc not ready — buffered', 'warn');
+      }
+    }
+
+    if (msg.type === 'ice-candidate' && msg.candidate && pc) {
+      if (remoteDescSet) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(msg.candidate)); } catch {}
+      } else {
+        iceCandidateBuffer.push(msg.candidate);
+      }
+    }
+  };
+}
+
+// ── WebRTC ─────────────────────────────────────────────
+
+async function startStream() {
+  const deviceId = document.getElementById('device-select').value;
+  if (!deviceId) return;
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: { exact: deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+    startMeter(stream);
+    await beginStream(stream);
+  } catch(e) {
+    log('Could not capture audio: '+e.message, 'err');
+  }
+}
+
+async function startLoopback() {
+  if (streamActive) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false
+      }
+    });
+    const testCtx = new AudioContext();
+    const src = testCtx.createMediaStreamSource(stream);
+    const analyser = testCtx.createAnalyser();
+    src.connect(analyser);
+    setTimeout(() => {
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((a,b) => a+b, 0) / data.length;
+      log('Loopback mic energy: ' + avg.toFixed(2));
+    }, 1000);
+    startMeter(stream);
+    await beginStream(stream);
+  } catch(e) {
+    log('Could not capture audio: '+e.message, 'err');
+  }
+}
+
+async function beginStream(micStream) {
+  log('beginStream called');
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    log('Signal server unavailable', 'warn');
+    return;
+  }
+  if (pc) stopStream({ silent: true });
+
+  localStream = micStream;
+  const streamToSend = micStream;
+  log('Audio tracks: ' + micStream.getAudioTracks().length);
+  log('Track label: ' + (micStream.getAudioTracks()[0]?.label || 'n/a'));
+  log('Track state: ' + (micStream.getAudioTracks()[0]?.readyState || 'n/a'));
+  log('track enabled: ' + (micStream.getAudioTracks()[0]?.enabled));
+  log('track muted: ' + (micStream.getAudioTracks()[0]?.muted));
+
+  pc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    sdpSemantics: 'unified-plan'
+  });
+  streamActive = true;
+  remoteDescSet = false;
+  iceCandidateBuffer = [];
+
+  streamToSend.getAudioTracks().forEach((track) => {
+    pc.addTrack(track, micStream);
+    log('Track added to PC: ' + track.label);
+  });
+  pc.getTransceivers().forEach((t) => {
+    if (t.receiver && t.receiver.track && t.receiver.track.kind === 'audio') {
+      t.direction = 'sendonly';
+    }
+  });
+
+  pc.onconnectionstatechange = () => {
+    log('Connection: ' + pc.connectionState);
+    if (pc.connectionState === 'connected') {
+      log('FULLY CONNECTED', 'ok');
+      setDot('rtc', 'live', 'Streaming ✓');
+      streamActive = true;
+      document.getElementById('btn-stream').style.display = 'none';
+      document.getElementById('btn-loopback').style.display = 'none';
+      document.getElementById('btn-stop').style.display = 'flex';
+    }
+    if (pc.connectionState === 'failed') {
+      log('Connection FAILED', 'err');
+    }
+    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+      stopStream();
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    console.log('ICE state:', pc.iceConnectionState);
+    log('ICE: ' + pc.iceConnectionState);
+  };
+
+  pc.onicecandidate = (e) => {
+    console.log('ICE candidate:', e.candidate?.type);
+    // candidates already in SDP
+  };
+
+  pc.onicegatheringstatechange = () => {
+    console.log('ICE gathering:', pc.iceGatheringState);
+  };
+
+  await pc.setLocalDescription(await pc.createOffer({
+    offerToReceiveAudio: false,
+    offerToReceiveVideo: false
+  }));
+  await waitForIceGathering(pc);
+  ws.send(JSON.stringify({ type: 'offer', sdp: pc.localDescription }));
+  log('offer sent');
+  if (pendingAnswer) {
+    await pc.setRemoteDescription(new RTCSessionDescription(pendingAnswer));
+    log('Applied buffered answer', 'ok');
+    pendingAnswer = null;
+    remoteDescSet = true;
+  }
+  setDot('rtc', 'warn', 'Handshaking…');
+  log('Sent offer to phone…');
+  updateStreamButtons();
+}
+
+function stopStream({ silent = false } = {}) {
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  if (animFrame) cancelAnimationFrame(animFrame);
+  document.getElementById('meter-bar').style.width = '0%';
+  document.getElementById('meter-val').textContent = '—';
+  document.getElementById('btn-stream').style.display = 'flex';
+  document.getElementById('btn-loopback').style.display = 'flex';
+  document.getElementById('btn-stop').style.display = 'none';
+  streamActive = false;
+  remoteDescSet = false;
+  iceCandidateBuffer = [];
+  setDot('rtc', '', 'Stopped');
+  checkReady();
+  if (!silent) log('Stream stopped');
+}
+
+function waitForIceGathering(peer) {
+  return new Promise((resolve) => {
+    if (peer.iceGatheringState === 'complete') return resolve();
+    const timeout = setTimeout(() => {
+      peer.onicegatheringstatechange = null;
+      resolve();
+    }, 3000);
+    peer.onicegatheringstatechange = () => {
+      if (peer.iceGatheringState === 'complete') {
+        clearTimeout(timeout);
+        peer.onicegatheringstatechange = null;
+        resolve();
+      }
+    };
+  });
+}
+
+// ── Helpers ────────────────────────────────────────────
+function setDot(id, cls, label) {
+  const dot = document.getElementById('dot-'+id);
+  dot.className = 'dot ' + (cls||'');
+  document.getElementById('lbl-'+id).textContent = label;
+}
+
+// ── RTT ping ──────────────────────────────────────────
+setInterval(() => {
+  if (ws?.readyState === 1) {
+    const t = Date.now();
+    ws.send(JSON.stringify({ type: 'ping', t }));
+  }
+}, 2000);
+
+setInterval(pollServerStatus, 2000);
+pollServerStatus();
+
+// ── Init ───────────────────────────────────────────────
+setDot('phone', '', 'Waiting for phone…');
+setDot('rtc', '', 'Not started');
+renderSoundboard();
+connectWS();
+</script>
+</body>
+</html>
