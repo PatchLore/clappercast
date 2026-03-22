@@ -835,13 +835,36 @@ function connectWS() {
 
 // ── WebRTC ─────────────────────────────────────────────
 
+const HQ_AUDIO_CONSTRAINTS = {
+  echoCancellation: false,
+  noiseSuppression: false,
+  autoGainControl: false,
+  sampleRate: 48000,
+  sampleSize: 16,
+  channelCount: 2
+};
+
+async function setHighQualityAudio(pc) {
+  const sender = pc.getSenders().find(s => s.track?.kind === 'audio');
+  if (sender) {
+    const params = sender.getParameters();
+    if (params.encodings && params.encodings.length > 0) {
+      params.encodings[0].maxBitrate = 128000;
+    } else {
+      params.encodings = [{ maxBitrate: 128000 }];
+    }
+    await sender.setParameters(params);
+    log('Audio bitrate set to 128kbps', 'ok');
+  }
+}
+
 async function startStream() {
   const deviceId = document.getElementById('device-select').value;
   if (!deviceId) return;
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { deviceId: { exact: deviceId }, echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      audio: { deviceId: { exact: deviceId }, ...HQ_AUDIO_CONSTRAINTS }
     });
     startMeter(stream);
     await beginStream(stream);
@@ -854,11 +877,7 @@ async function startLoopback() {
   if (streamActive) return;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
-      }
+      audio: { ...HQ_AUDIO_CONSTRAINTS }
     });
     const testCtx = new AudioContext();
     const src = testCtx.createMediaStreamSource(stream);
@@ -920,11 +939,10 @@ async function beginStream(micStream) {
       document.getElementById('btn-stream').style.display = 'none';
       document.getElementById('btn-loopback').style.display = 'none';
       document.getElementById('btn-stop').style.display = 'flex';
+      setHighQualityAudio(pc).catch((e) => log('setHighQualityAudio: ' + e.message, 'err'));
     }
     if (pc.connectionState === 'failed') {
       log('Connection FAILED', 'err');
-    }
-    if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
       stopStream();
     }
   };
