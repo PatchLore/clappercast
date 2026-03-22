@@ -19,6 +19,9 @@ const server = https.createServer({
 }, app);
 const wss = new WebSocketServer({ server });
 
+/** Railway and other hosts set PORT; local dev defaults to 3747 */
+const PORT = process.env.PORT || 3747;
+
 const PING_INTERVAL = 15000;
 
 // ── State ──────────────────────────────────────────────
@@ -187,16 +190,8 @@ app.get('/receiver', (req, res) => {
 });
 
 // ── Start ──────────────────────────────────────────────
-const PORT = process.env.PORT || 3747;
 server.listen(PORT, '0.0.0.0', () => {
-  const ip = getLocalIP();
-  console.log('\n╔══════════════════════════════════════╗');
-  console.log('║     ClapperCast Bridge  🎙️            ║');
-  console.log('╠══════════════════════════════════════╣');
-  console.log(`║  PC sender:   https://localhost:${PORT}  ║`);
-  console.log(`║  Phone:       https://${ip}:${PORT}/receiver ║`);
-  console.log('╚══════════════════════════════════════╝\n');
-  console.log('Scan the QR code on the sender page to connect your phone.\n');
+  console.log('Server running on port', PORT);
   initNgrok();
 });
 
