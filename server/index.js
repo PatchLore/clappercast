@@ -1,26 +1,38 @@
 const express = require('express');
 const { WebSocketServer } = require('ws');
-const https = require('https');
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
 const cors = require('cors');
 const os = require('os');
-const certPath = path.join(__dirname, '../localhost+2.pem');
-const keyPath = path.join(__dirname, '../localhost+2-key.pem');
 
 const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, '../public')));
 
-const server = https.createServer({
-  cert: fs.readFileSync(certPath),
-  key: fs.readFileSync(keyPath)
-}, app);
-const wss = new WebSocketServer({ server });
+let server;
 
-/** Railway and other hosts set PORT; local dev defaults to 3747 */
+if (process.env.NODE_ENV === 'production') {
+  const http = require('http');
+  server = http.createServer(app);
+} else {
+  try {
+    const https = require('https');
+    const certPath = path.join(__dirname, '../localhost+2.pem');
+    const keyPath = path.join(__dirname, '../localhost+2-key.pem');
+    server = https.createServer({
+      cert: fs.readFileSync(certPath),
+      key: fs.readFileSync(keyPath)
+    }, app);
+  } catch (e) {
+    console.log('No certs found, falling back to HTTP');
+    const http = require('http');
+    server = http.createServer(app);
+  }
+}
+
 const PORT = process.env.PORT || 3747;
+const wss = new WebSocketServer({ server });
 
 const PING_INTERVAL = 15000;
 
